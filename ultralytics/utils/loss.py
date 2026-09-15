@@ -6,8 +6,8 @@ import math
 from typing import Any
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from ultralytics.utils.metrics import OKS_SIGMA, RLE_WEIGHT
 from ultralytics.utils.ops import crop_mask, xywh2xyxy, xyxy2xywh
@@ -447,15 +447,13 @@ class v8DetectionLoss:
                 stride_tensor,
             )
 
-
         loss[0] *= self.hyp.box  # box gain
         loss[1] *= self.hyp.cls  # cls gain
         loss[2] *= self.hyp.dfl  # dfl gain
         if 1:
-
             restore_loss_val = self.model.restoreLoss
-            class_loss_val = self.model.classLoss 
-            loss[0] = 1*(restore_loss_val + class_loss_val) +loss[0]#调参内容 0.1、0.5、1、2、4、8、10
+            class_loss_val = self.model.classLoss
+            loss[0] = 1 * (restore_loss_val + class_loss_val) + loss[0]  # 调参内容 0.1、0.5、1、2、4、8、10
 
         return (
             (fg_mask, target_gt_idx, target_bboxes, anchor_points, stride_tensor),
