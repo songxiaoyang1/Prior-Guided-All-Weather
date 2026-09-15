@@ -1,0 +1,4 @@
+
+E:\other\adverseWeather\code\ultralytics\ultralytics\utils\loss.py 的454行
+E:\other\adverseWeather\code\ultralytics\ultralytics\nn\tasks.py 的543行 
+E:\other\adverseWeather\code\ultralytics\ultralytics\nn\tasks.py 的548行589是训练时别开，推理时开，能保存效果图
