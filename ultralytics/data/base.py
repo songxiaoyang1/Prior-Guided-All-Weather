@@ -10,7 +10,7 @@ from copy import deepcopy
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import Any
-from PIL import Image
+
 import cv2
 import numpy as np
 from torch.utils.data import Dataset
@@ -238,9 +238,6 @@ class BaseDataset(Dataset):
 
             h0, w0 = im.shape[:2]  # orig hw
 
-
-
-
             if rect_mode:  # resize long side to imgsz while maintaining aspect ratio
                 r = self.imgsz / max(h0, w0)  # ratio
                 if r != 1:  # if sizes are not equal
@@ -395,7 +392,7 @@ class BaseDataset(Dataset):
         label = deepcopy(self.labels[index])  # requires deepcopy() https://github.com/ultralytics/ultralytics/pull/1948
         label.pop("shape", None)  # shape is for rect, remove it
         label["img"], label["ori_shape"], label["resized_shape"] = self.load_image(index)
-        #label["noise_label"] = self.noise_type
+        # label["noise_label"] = self.noise_type
         label["ratio_pad"] = (
             label["resized_shape"][0] / label["ori_shape"][0],
             label["resized_shape"][1] / label["ori_shape"][1],
