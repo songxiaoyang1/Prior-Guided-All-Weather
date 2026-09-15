@@ -5,23 +5,22 @@
 # Copyright 2018-2020 BasicSR Authors
 # ------------------------------------------------------------------------
 import math
+
 import numpy as np
 import torch
 
 
 def cubic(x):
-    """cubic function used for calculate_weights_indices."""
+    """Cubic function used for calculate_weights_indices."""
     absx = torch.abs(x)
     absx2 = absx**2
     absx3 = absx**3
-    return (1.5 * absx3 - 2.5 * absx2 + 1) * (
-        (absx <= 1).type_as(absx)) + (-0.5 * absx3 + 2.5 * absx2 - 4 * absx +
-                                      2) * (((absx > 1) *
-                                             (absx <= 2)).type_as(absx))
+    return (1.5 * absx3 - 2.5 * absx2 + 1) * ((absx <= 1).type_as(absx)) + (
+        -0.5 * absx3 + 2.5 * absx2 - 4 * absx + 2
+    ) * (((absx > 1) * (absx <= 2)).type_as(absx))
 
 
-def calculate_weights_indices(in_length, out_length, scale, kernel,
-                              kernel_width, antialiasing):
+def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width, antialiasing):
     """Calculate weights and indices, used for imresize function.
 
     Args:
@@ -31,7 +30,6 @@ def calculate_weights_indices(in_length, out_length, scale, kernel,
         kernel_width (int): Kernel width.
         antialisaing (bool): Whether to apply anti-aliasing when downsampling.
     """
-
     if (scale < 1) and antialiasing:
         # Use a modified kernel (larger kernel width) to simultaneously
         # interpolate and antialias
@@ -56,8 +54,9 @@ def calculate_weights_indices(in_length, out_length, scale, kernel,
 
     # The indices of the input pixels involved in computing the k-th output
     # pixel are in row k of the indices matrix.
-    indices = left.view(out_length, 1).expand(out_length, p) + torch.linspace(
-        0, p - 1, p).view(1, p).expand(out_length, p)
+    indices = left.view(out_length, 1).expand(out_length, p) + torch.linspace(0, p - 1, p).view(1, p).expand(
+        out_length, p
+    )
 
     # The weights used to compute the k-th output pixel are in row k of the
     # weights matrix.
@@ -92,19 +91,17 @@ def calculate_weights_indices(in_length, out_length, scale, kernel,
 
 @torch.no_grad()
 def imresize(img, scale, antialiasing=True):
-    """imresize function same as MATLAB.
+    """Imresize function same as MATLAB.
 
-    It now only supports bicubic.
-    The same scale applies for both height and width.
+    It now only supports bicubic. The same scale applies for both height and width.
 
     Args:
         img (Tensor | Numpy array):
-            Tensor: Input image with shape (c, h, w), [0, 1] range.
-            Numpy: Input image with shape (h, w, c), [0, 1] range.
-        scale (float): Scale factor. The same scale applies for both height
-            and width.
+        Tensor: Input image with shape (c, h, w), [0, 1] range.
+        Numpy: Input image with shape (h, w, c), [0, 1] range.
+        scale (float): Scale factor. The same scale applies for both height and width.
         antialisaing (bool): Whether to apply anti-aliasing when downsampling.
-            Default: True.
+        Default: True.
 
     Returns:
         Tensor: Output image with shape (c, h, w), [0, 1] range, w/o round.
@@ -118,13 +115,15 @@ def imresize(img, scale, antialiasing=True):
     in_c, in_h, in_w = img.size()
     out_h, out_w = math.ceil(in_h * scale), math.ceil(in_w * scale)
     kernel_width = 4
-    kernel = 'cubic'
+    kernel = "cubic"
 
     # get weights and indices
     weights_h, indices_h, sym_len_hs, sym_len_he = calculate_weights_indices(
-        in_h, out_h, scale, kernel, kernel_width, antialiasing)
+        in_h, out_h, scale, kernel, kernel_width, antialiasing
+    )
     weights_w, indices_w, sym_len_ws, sym_len_we = calculate_weights_indices(
-        in_w, out_w, scale, kernel, kernel_width, antialiasing)
+        in_w, out_w, scale, kernel, kernel_width, antialiasing
+    )
     # process H dimension
     # symmetric copying
     img_aug = torch.FloatTensor(in_c, in_h + sym_len_hs + sym_len_he, in_w)
@@ -145,8 +144,7 @@ def imresize(img, scale, antialiasing=True):
     for i in range(out_h):
         idx = int(indices_h[i][0])
         for j in range(in_c):
-            out_1[j, i, :] = img_aug[j, idx:idx + kernel_width, :].transpose(
-                0, 1).mv(weights_h[i])
+            out_1[j, i, :] = img_aug[j, idx : idx + kernel_width, :].transpose(0, 1).mv(weights_h[i])
 
     # process W dimension
     # symmetric copying
@@ -168,8 +166,7 @@ def imresize(img, scale, antialiasing=True):
     for i in range(out_w):
         idx = int(indices_w[i][0])
         for j in range(in_c):
-            out_2[j, :, i] = out_1_aug[j, :,
-                                       idx:idx + kernel_width].mv(weights_w[i])
+            out_2[j, :, i] = out_1_aug[j, :, idx : idx + kernel_width].mv(weights_w[i])
 
     if numpy_type:
         out_2 = out_2.numpy().transpose(1, 2, 0)
@@ -179,14 +176,13 @@ def imresize(img, scale, antialiasing=True):
 def rgb2ycbcr(img, y_only=False):
     """Convert a RGB image to YCbCr image.
 
-    This function produces the same results as Matlab's `rgb2ycbcr` function.
-    It implements the ITU-R BT.601 conversion for standard-definition
+    This function produces the same results as Matlab's `rgb2ycbcr` function. It implements the ITU-R BT.601 conversion
+    for standard-definition
     television. See more details in
     https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion.
 
-    It differs from a similar function in cv2.cvtColor: `RGB <-> YCrCb`.
-    In OpenCV, it implements a JPEG conversion. See more details in
-    https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion.
+    It differs from a similar function in cv2.cvtColor: `RGB <-> YCrCb`. In OpenCV, it implements a JPEG conversion. See
+    more details in https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion.
 
     Args:
         img (ndarray): The input image. It accepts:
@@ -195,17 +191,19 @@ def rgb2ycbcr(img, y_only=False):
         y_only (bool): Whether to only return Y channel. Default: False.
 
     Returns:
-        ndarray: The converted YCbCr image. The output image has the same type
-            and range as input image.
+        ndarray: The converted YCbCr image. The output image has the same type and range as input image.
     """
     img_type = img.dtype
     img = _convert_input_type_range(img)
     if y_only:
         out_img = np.dot(img, [65.481, 128.553, 24.966]) + 16.0
     else:
-        out_img = np.matmul(
-            img, [[65.481, -37.797, 112.0], [128.553, -74.203, -93.786],
-                  [24.966, 112.0, -18.214]]) + [16, 128, 128]
+        out_img = [
+            *np.matmul(img, [[65.481, -37.797, 112.0], [128.553, -74.203, -93.786], [24.966, 112.0, -18.214]]),
+            16,
+            128,
+            128,
+        ]
     out_img = _convert_output_type_range(out_img, img_type)
     return out_img
 
@@ -213,14 +211,12 @@ def rgb2ycbcr(img, y_only=False):
 def bgr2ycbcr(img, y_only=False):
     """Convert a BGR image to YCbCr image.
 
-    The bgr version of rgb2ycbcr.
-    It implements the ITU-R BT.601 conversion for standard-definition
+    The bgr version of rgb2ycbcr. It implements the ITU-R BT.601 conversion for standard-definition
     television. See more details in
     https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion.
 
-    It differs from a similar function in cv2.cvtColor: `BGR <-> YCrCb`.
-    In OpenCV, it implements a JPEG conversion. See more details in
-    https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion.
+    It differs from a similar function in cv2.cvtColor: `BGR <-> YCrCb`. In OpenCV, it implements a JPEG conversion. See
+    more details in https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion.
 
     Args:
         img (ndarray): The input image. It accepts:
@@ -229,17 +225,19 @@ def bgr2ycbcr(img, y_only=False):
         y_only (bool): Whether to only return Y channel. Default: False.
 
     Returns:
-        ndarray: The converted YCbCr image. The output image has the same type
-            and range as input image.
+        ndarray: The converted YCbCr image. The output image has the same type and range as input image.
     """
     img_type = img.dtype
     img = _convert_input_type_range(img)
     if y_only:
         out_img = np.dot(img, [24.966, 128.553, 65.481]) + 16.0
     else:
-        out_img = np.matmul(
-            img, [[24.966, 112.0, -18.214], [128.553, -74.203, -93.786],
-                  [65.481, -37.797, 112.0]]) + [16, 128, 128]
+        out_img = [
+            *np.matmul(img, [[24.966, 112.0, -18.214], [128.553, -74.203, -93.786], [65.481, -37.797, 112.0]]),
+            16,
+            128,
+            128,
+        ]
     out_img = _convert_output_type_range(out_img, img_type)
     return out_img
 
@@ -247,14 +245,13 @@ def bgr2ycbcr(img, y_only=False):
 def ycbcr2rgb(img):
     """Convert a YCbCr image to RGB image.
 
-    This function produces the same results as Matlab's ycbcr2rgb function.
-    It implements the ITU-R BT.601 conversion for standard-definition
+    This function produces the same results as Matlab's ycbcr2rgb function. It implements the ITU-R BT.601 conversion
+    for standard-definition
     television. See more details in
     https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion.
 
-    It differs from a similar function in cv2.cvtColor: `YCrCb <-> RGB`.
-    In OpenCV, it implements a JPEG conversion. See more details in
-    https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion.
+    It differs from a similar function in cv2.cvtColor: `YCrCb <-> RGB`. In OpenCV, it implements a JPEG conversion. See
+    more details in https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion.
 
     Args:
         img (ndarray): The input image. It accepts:
@@ -262,16 +259,13 @@ def ycbcr2rgb(img):
             2. np.float32 type with range [0, 1].
 
     Returns:
-        ndarray: The converted RGB image. The output image has the same type
-            and range as input image.
+        ndarray: The converted RGB image. The output image has the same type and range as input image.
     """
     img_type = img.dtype
     img = _convert_input_type_range(img) * 255
-    out_img = np.matmul(img, [[0.00456621, 0.00456621, 0.00456621],
-                              [0, -0.00153632, 0.00791071],
-                              [0.00625893, -0.00318811, 0]]) * 255.0 + [
-                                  -222.921, 135.576, -276.836
-                              ]  # noqa: E126
+    out_img = np.matmul(
+        img, [[0.00456621, 0.00456621, 0.00456621], [0, -0.00153632, 0.00791071], [0.00625893, -0.00318811, 0]]
+    ) * 255.0 + [-222.921, 135.576, -276.836]
     out_img = _convert_output_type_range(out_img, img_type)
     return out_img
 
@@ -279,14 +273,12 @@ def ycbcr2rgb(img):
 def ycbcr2bgr(img):
     """Convert a YCbCr image to BGR image.
 
-    The bgr version of ycbcr2rgb.
-    It implements the ITU-R BT.601 conversion for standard-definition
+    The bgr version of ycbcr2rgb. It implements the ITU-R BT.601 conversion for standard-definition
     television. See more details in
     https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion.
 
-    It differs from a similar function in cv2.cvtColor: `YCrCb <-> BGR`.
-    In OpenCV, it implements a JPEG conversion. See more details in
-    https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion.
+    It differs from a similar function in cv2.cvtColor: `YCrCb <-> BGR`. In OpenCV, it implements a JPEG conversion. See
+    more details in https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion.
 
     Args:
         img (ndarray): The input image. It accepts:
@@ -294,16 +286,13 @@ def ycbcr2bgr(img):
             2. np.float32 type with range [0, 1].
 
     Returns:
-        ndarray: The converted BGR image. The output image has the same type
-            and range as input image.
+        ndarray: The converted BGR image. The output image has the same type and range as input image.
     """
     img_type = img.dtype
     img = _convert_input_type_range(img) * 255
-    out_img = np.matmul(img, [[0.00456621, 0.00456621, 0.00456621],
-                              [0.00791071, -0.00153632, 0],
-                              [0, -0.00318811, 0.00625893]]) * 255.0 + [
-                                  -276.836, 135.576, -222.921
-                              ]  # noqa: E126
+    out_img = np.matmul(
+        img, [[0.00456621, 0.00456621, 0.00456621], [0.00791071, -0.00153632, 0], [0, -0.00318811, 0.00625893]]
+    ) * 255.0 + [-276.836, 135.576, -222.921]
     out_img = _convert_output_type_range(out_img, img_type)
     return out_img
 
@@ -311,9 +300,8 @@ def ycbcr2bgr(img):
 def _convert_input_type_range(img):
     """Convert the type and range of the input image.
 
-    It converts the input image to np.float32 type and range of [0, 1].
-    It is mainly used for pre-processing the input image in colorspace
-    convertion functions such as rgb2ycbcr and ycbcr2rgb.
+    It converts the input image to np.float32 type and range of [0, 1]. It is mainly used for pre-processing the input
+    image in colorspace conversion functions such as rgb2ycbcr and ycbcr2rgb.
 
     Args:
         img (ndarray): The input image. It accepts:
@@ -321,47 +309,38 @@ def _convert_input_type_range(img):
             2. np.float32 type with range [0, 1].
 
     Returns:
-        (ndarray): The converted image with type of np.float32 and range of
-            [0, 1].
+        (ndarray): The converted image with type of np.float32 and range of [0, 1].
     """
     img_type = img.dtype
     img = img.astype(np.float32)
     if img_type == np.float32:
         pass
     elif img_type == np.uint8:
-        img /= 255.
+        img /= 255.0
     else:
-        raise TypeError('The img type should be np.float32 or np.uint8, '
-                        f'but got {img_type}')
+        raise TypeError(f"The img type should be np.float32 or np.uint8, but got {img_type}")
     return img
 
 
 def _convert_output_type_range(img, dst_type):
     """Convert the type and range of the image according to dst_type.
 
-    It converts the image to desired type and range. If `dst_type` is np.uint8,
-    images will be converted to np.uint8 type with range [0, 255]. If
-    `dst_type` is np.float32, it converts the image to np.float32 type with
-    range [0, 1].
-    It is mainly used for post-processing images in colorspace convertion
-    functions such as rgb2ycbcr and ycbcr2rgb.
+    It converts the image to desired type and range. If `dst_type` is np.uint8, images will be converted to np.uint8
+    type with range [0, 255]. If `dst_type` is np.float32, it converts the image to np.float32 type with range [0, 1].
+    It is mainly used for post-processing images in colorspace conversion functions such as rgb2ycbcr and ycbcr2rgb.
 
     Args:
-        img (ndarray): The image to be converted with np.float32 type and
-            range [0, 255].
-        dst_type (np.uint8 | np.float32): If dst_type is np.uint8, it
-            converts the image to np.uint8 type with range [0, 255]. If
-            dst_type is np.float32, it converts the image to np.float32 type
-            with range [0, 1].
+        img (ndarray): The image to be converted with np.float32 type and range [0, 255].
+        dst_type (np.uint8 | np.float32): If dst_type is np.uint8, it converts the image to np.uint8 type with range [0,
+            255]. If dst_type is np.float32, it converts the image to np.float32 type with range [0, 1].
 
     Returns:
         (ndarray): The converted image with desired type and range.
     """
     if dst_type not in (np.uint8, np.float32):
-        raise TypeError('The dst_type should be np.float32 or np.uint8, '
-                        f'but got {dst_type}')
+        raise TypeError(f"The dst_type should be np.float32 or np.uint8, but got {dst_type}")
     if dst_type == np.uint8:
         img = img.round()
     else:
-        img /= 255.
+        img /= 255.0
     return img.astype(dst_type)
