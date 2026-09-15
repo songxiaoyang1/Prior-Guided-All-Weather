@@ -6,6 +6,7 @@
 # ------------------------------------------------------------------------
 
 import math
+
 import torch
 from torch.utils.data.sampler import Sampler
 
@@ -13,14 +14,12 @@ from torch.utils.data.sampler import Sampler
 class EnlargedSampler(Sampler):
     """Sampler that restricts data loading to a subset of the dataset.
 
-    Modified from torch.utils.data.distributed.DistributedSampler
-    Support enlarging the dataset for iteration-based training, for saving
-    time when restart the dataloader after each epoch
+    Modified from torch.utils.data.distributed.DistributedSampler Support enlarging the dataset for iteration-based
+    training, for saving time when restart the dataloader after each epoch
 
     Args:
         dataset (torch.utils.data.Dataset): Dataset used for sampling.
-        num_replicas (int | None): Number of processes participating in
-            the training. It is usually the world_size.
+        num_replicas (int | None): Number of processes participating in the training. It is usually the world_size.
         rank (int | None): Rank of the current process within num_replicas.
         ratio (int): Enlarging ratio. Default: 1.
     """
@@ -30,8 +29,7 @@ class EnlargedSampler(Sampler):
         self.num_replicas = num_replicas
         self.rank = rank
         self.epoch = 0
-        self.num_samples = math.ceil(
-            len(self.dataset) * ratio / self.num_replicas)
+        self.num_samples = math.ceil(len(self.dataset) * ratio / self.num_replicas)
         self.total_size = self.num_samples * self.num_replicas
 
     def __iter__(self):
@@ -44,7 +42,7 @@ class EnlargedSampler(Sampler):
         indices = [v % dataset_size for v in indices]
 
         # subsample
-        indices = indices[self.rank:self.total_size:self.num_replicas]
+        indices = indices[self.rank : self.total_size : self.num_replicas]
         assert len(indices) == self.num_samples
 
         return iter(indices)
