@@ -6,6 +6,7 @@
 # ------------------------------------------------------------------------
 import queue as Queue
 import threading
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -13,8 +14,7 @@ from torch.utils.data import DataLoader
 class PrefetchGenerator(threading.Thread):
     """A general prefetch generator.
 
-    Ref:
-    https://stackoverflow.com/questions/7323664/python-generator-pre-fetch
+    Ref: https://stackoverflow.com/questions/7323664/python-generator-pre-fetch
 
     Args:
         generator: Python generator.
@@ -46,12 +46,9 @@ class PrefetchGenerator(threading.Thread):
 class PrefetchDataLoader(DataLoader):
     """Prefetch version of dataloader.
 
-    Ref:
-    https://github.com/IgorSusmelj/pytorch-styleguide/issues/5#
+    Ref: https://github.com/IgorSusmelj/pytorch-styleguide/issues/5#
 
-    TODO:
-    Need to test on single gpu and ddp (multi-gpu). There is a known issue in
-    ddp.
+    Todo: Need to test on single gpu and ddp (multi-gpu). There is a known issue in ddp.
 
     Args:
         num_prefetch_queue (int): Number of prefetch queue.
@@ -60,13 +57,13 @@ class PrefetchDataLoader(DataLoader):
 
     def __init__(self, num_prefetch_queue, **kwargs):
         self.num_prefetch_queue = num_prefetch_queue
-        super(PrefetchDataLoader, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __iter__(self):
         return PrefetchGenerator(super().__iter__(), self.num_prefetch_queue)
 
 
-class CPUPrefetcher():
+class CPUPrefetcher:
     """CPU prefetcher.
 
     Args:
@@ -87,11 +84,10 @@ class CPUPrefetcher():
         self.loader = iter(self.ori_loader)
 
 
-class CUDAPrefetcher():
+class CUDAPrefetcher:
     """CUDA prefetcher.
 
-    Ref:
-    https://github.com/NVIDIA/apex/issues/304#
+    Ref: https://github.com/NVIDIA/apex/issues/304#
 
     It may consums more GPU memory.
 
@@ -105,7 +101,7 @@ class CUDAPrefetcher():
         self.loader = iter(loader)
         self.opt = opt
         self.stream = torch.cuda.Stream()
-        self.device = torch.device('cuda' if opt['num_gpu'] != 0 else 'cpu')
+        self.device = torch.device("cuda" if opt["num_gpu"] != 0 else "cpu")
         self.preload()
 
     def preload(self):
@@ -113,13 +109,12 @@ class CUDAPrefetcher():
             self.batch = next(self.loader)  # self.batch is a dict
         except StopIteration:
             self.batch = None
-            return None
+            return
         # put tensors to gpu
         with torch.cuda.stream(self.stream):
             for k, v in self.batch.items():
                 if torch.is_tensor(v):
-                    self.batch[k] = self.batch[k].to(
-                        device=self.device, non_blocking=True)
+                    self.batch[k] = self.batch[k].to(device=self.device, non_blocking=True)
 
     def next(self):
         torch.cuda.current_stream().wait_stream(self.stream)

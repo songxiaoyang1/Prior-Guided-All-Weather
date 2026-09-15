@@ -17,8 +17,8 @@ from typing import Any
 import numpy as np
 import torch
 import torch.distributed as dist
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from ultralytics import __version__
 from ultralytics.utils import (
@@ -667,15 +667,15 @@ class ModelEMA:
             self.ema = deepcopy(unwrap_model(model)).eval()  # FP32 EMA
         else:
             base_model = unwrap_model(model)
-            if hasattr(base_model, 'restoreLoss'):
-                base_model.restoreLoss = None 
-            if hasattr(base_model, 'classLoss'):
+            if hasattr(base_model, "restoreLoss"):
+                base_model.restoreLoss = None
+            if hasattr(base_model, "classLoss"):
                 base_model.classLoss = None
-                
+
             # 注意：如果 clean_gt 和 noise_type 也是导致 deepcopy 出错的原因（它们也是临时绑定的 Tensor），建议一并处理
-            if hasattr(base_model, 'clean_gt'):
+            if hasattr(base_model, "clean_gt"):
                 base_model.clean_gt = None
-            if hasattr(base_model, 'noise_type'):
+            if hasattr(base_model, "noise_type"):
                 base_model.noise_type = None
             self.ema = deepcopy(base_model).eval()
 
@@ -702,7 +702,12 @@ class ModelEMA:
                     v += (1 - d) * msd[k].detach()
                     # assert v.dtype == msd[k].dtype == torch.float32, f'{k}: EMA {v.dtype},  model {msd[k].dtype}'
 
-    def update_attr(self, model, include=(), exclude=("process_group", "reducer","restoreLoss", "classLoss", "clean_gt", "noise_type")):
+    def update_attr(
+        self,
+        model,
+        include=(),
+        exclude=("process_group", "reducer", "restoreLoss", "classLoss", "clean_gt", "noise_type"),
+    ):
         """Copy attributes from model to EMA, with options to include/exclude certain attributes.
 
         Args:
@@ -805,7 +810,7 @@ def cuda_memory_usage(device=None):
     Yields:
         (dict): A dictionary with a key 'memory' initialized to 0, which will be updated with the reserved memory.
     """
-    cuda_info = dict(memory=0)
+    cuda_info = {"memory": 0}
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
         try:
