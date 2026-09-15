@@ -60,6 +60,7 @@ from .block import (
     SCDown,
     TorchVision,
 )
+from .classBranch import ClassBranchHasX, ClassBranchNoX
 from .conv import (
     CBAM,
     ChannelAttention,
@@ -93,6 +94,7 @@ from .head import (
     YOLOESegment26,
     v10Detect,
 )
+from .restoreBranch import RestoreBranchHasX, RestoreBranchNoX
 from .transformer import (
     AIFI,
     MLP,
@@ -105,13 +107,8 @@ from .transformer import (
     TransformerEncoderLayer,
     TransformerLayer,
 )
-from .restoreBranch import RestoreBranchHasX,RestoreBranchNoX
-from .classBranch import ClassBranchHasX,ClassBranchNoX
+
 __all__ = (
-    "RestoreBranchNoX",
-    "RestoreBranchHasX",
-    "ClassBranchHasX",
-    "ClassBranchNoX",  
     "AIFI",
     "C1",
     "C2",
@@ -146,6 +143,8 @@ __all__ = (
     "CBFuse",
     "CBLinear",
     "ChannelAttention",
+    "ClassBranchHasX",
+    "ClassBranchNoX",
     "Classify",
     "Concat",
     "ContrastiveHead",
@@ -179,6 +178,8 @@ __all__ = (
     "RepNCSPELAN4",
     "RepVGGDW",
     "ResNetLayer",
+    "RestoreBranchHasX",
+    "RestoreBranchNoX",
     "SCDown",
     "Segment",
     "Segment26",
