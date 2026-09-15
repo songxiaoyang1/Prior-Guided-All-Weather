@@ -47,6 +47,6 @@ head:
   - [-1, 1, Conv, [512, 3, 2]]
   - [[-1, 11], 1, Concat, [1]] # cat head P5
   - [-1, 2, C3k2, [1024, True]] # 22 (P5/32-large)
-  - [[0, 1, 2 ,4], 1, RestoreBranchHasX, []]
+  - [[0, 1, 2, 4], 1, RestoreBranchHasX, []]
   - [[11], 1, ClassBranchHasX, []]
   - [[17, 20, 23], 1, Segment, [nc, 32, 256]] # Segment(P3, P4, P5)
